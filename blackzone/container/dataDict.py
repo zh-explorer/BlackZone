@@ -6,6 +6,13 @@ from json import dumps
 class DataDict(MutableMapping):
     """
     内部存放config元数据的类
+    类似字典,可以和字典混用。但是可以使用点调用取值与赋值的字典.并且可以嵌套赋值。
+    >>> a = DataDict()
+    >>> a.a = 3
+    >>> a.b = {"a":1,"b":2}
+    >>> a.b.c = 123
+    >>> a
+    {'a': 3, 'b': {'a': 1, 'c': 123, 'b': 2}}
     """
 
     def __init__(self, *args, **kwargs):
