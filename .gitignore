@@ -157,5 +157,6 @@ tags
 # IntelliJ project files
 .idea/
 *.iml
+test/
 out
 gen

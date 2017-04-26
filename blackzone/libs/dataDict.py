@@ -1,6 +1,7 @@
 # coding=utf-8
 from collections import MutableMapping
 from json import dumps
+import dataList
 
 
 class DataDict(MutableMapping):
@@ -20,17 +21,9 @@ class DataDict(MutableMapping):
             if not isinstance(d, dict):
                 raise KeyError
             for key, value in d.items():
-                self.check(key,value)
-                if isinstance(value, dict):
-                    self.__dict__[key] = self.__class__(value)
-                else:
-                    self.__dict__[key] = value
+                self._check_set(key, value)
         for key, value in kwargs.items():
-            self.check(key, value)
-            if isinstance(value, dict):
-                self.__dict__[key] = self.__class__(value)
-            else:
-                self.__dict__[key] = value
+            self._check_set(key, value)
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -39,11 +32,7 @@ class DataDict(MutableMapping):
         del self.__dict__[key]
 
     def __setitem__(self, key, value):
-        self.check(key, value)
-        if isinstance(value, dict):
-            self.__dict__[key] = self.__class__(value)
-        else:
-            self.__dict__[key] = value
+        self._check_set(key, value)
 
     def __setattr__(self, key, value):
         self[key] = value
@@ -86,11 +75,22 @@ class DataDict(MutableMapping):
         # def to_json(self):
         #     dumps(self.to_dict())
 
+    def _check_set(self, key, value):
+        self._check(key, value)
+        if isinstance(value, dict):
+            self.__dict__[key] = self.__class__(value)
+        elif isinstance(value, list):
+            self.__dict__[key] = dataList.DataList(value)
+        else:
+            self.__dict__[key] = value
+
     def to_dict(self):
         d = {}
-        for key,value in self.__dict__.items():
+        for key, value in self.__dict__.items():
             if isinstance(value, self.__class__):
                 d[key] = value.to_dict()
+            elif isinstance(value, dataList.DataList):
+                d[key] = value.to_list()
             else:
                 d[key] = value
         return d
@@ -98,6 +98,6 @@ class DataDict(MutableMapping):
     def to_json(self):
         return dumps(self.to_dict())
 
-    def check(self, key, value):
+    def _check(self, key, value):
         # TODO 需要对添加对象的检查
         pass
