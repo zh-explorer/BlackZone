@@ -1,9 +1,18 @@
+# coding=utf-8
 import ctypes
 import os
+import shutil
+
+from ..context import context
 
 
+# TODO 持久化保存
 class FsManager(object):
-    def __init__(self, image_id, container_id, cwd="/home/explorer/mycontainer/"):
+    """
+    管理容器事例和镜像之间的映射关系。并且进行融合文件系统的挂载以及容器清空的操作
+    """
+
+    def __init__(self, image_id, container_id, cwd=context.cwd):
         libc = ctypes.cdll.LoadLibrary("libc.so.6")
         self.__mount = libc.mount
         self.__umount = libc.umount
@@ -50,11 +59,7 @@ class FsManager(object):
 
     def clean_container(self):
         self.umount_fs()
-        for root, dirs, files in os.walk(self.container_dir, topdown=False):
-            for f in files:
-                p = os.path.join(root, f)
-                os.unlink(p)
-            os.rmdir(root)
+        shutil.rmtree(self.container_dir)
 
     @staticmethod
     def check_permission():

@@ -1,7 +1,11 @@
+# coding=utf-8
 from ..libs import DataDict
 
 
 class ContainerConfig(object):
+    """
+    保存配置文件元数据
+    """
     config = DataDict()
 
     def __init__(self):
@@ -63,7 +67,8 @@ class ContainerConfig(object):
         root = self.config.root
 
         root.path = "rootfs"
-        root.readonly = True
+        # use aufs to instead
+        # root.readonly = True
 
     def set_mounts(self):
         self.config.mounts = []
@@ -189,3 +194,6 @@ class ContainerConfig(object):
             "/proc/sys",
             "/proc/sysrq-trigger"
         ]
+
+    def to_json(self):
+        return self.config.to_json()
