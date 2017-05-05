@@ -28,7 +28,7 @@ class ContainerConfig(object):
         self.config.process = {}
         process = self.config.process
 
-        process.terminal = True
+        process.terminal = False
         process.consoleSize = {"height": 0, "width": 0}
         process.user = {"uid": 0, "gid": 0}
         process.args = ["sh"]

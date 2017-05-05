@@ -41,13 +41,12 @@ class Stdio(Tube):
                 raise IOError(e)
         return 0
 
-
     def set_log(self, log):
         # TODO
         pass
 
     def close(self):
-        # nothing to close
+        self.poll_code = 0
         self.stdin.close()
         self.stdout.close()
         self.stderr.close()
