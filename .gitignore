@@ -158,5 +158,6 @@ tags
 .idea/
 *.iml
 test/
+test*
 out
 gen
