@@ -15,7 +15,7 @@ class Container(object):
     def __init__(self, image_id):
         # TODO 持久化保存
         self.image_id = image_id
-        self.container_id = self.sha(str(time.time()))
+        self.container_id = self.sha(str(time.time()) + context.get_noise())
         self.fs = FsManager(self.image_id, self.container_id)
         self.config = ContainerConfig()
         self.create_config_file()

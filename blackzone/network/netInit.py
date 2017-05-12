@@ -16,6 +16,9 @@ def net_init(bridge_name="blackzone0", ip_addr="172.20.0.1/16"):
 
     # delete old bridge
     main_conf_path = os.path.join(context.cwd, "netconf", "main.config")
+    ns_conf_path = os.path.join(context.cwd, "netconf", "namespace.config")
+    # TODO need clean ns
+
     main_conf = ConfigParser.SafeConfigParser()
     main_conf.read(main_conf_path)
     if main_conf.has_section('bridge'):
@@ -60,4 +63,11 @@ def net_init(bridge_name="blackzone0", ip_addr="172.20.0.1/16"):
     main_conf.add_section("bridge")
     main_conf.set("bridge", "name", bridge_name)
     main_conf.set("bridge", "ip", ip_addr)
-    main_conf.write(file(main_conf_path, 'w'))
+    main_conf_fp = file(main_conf_path, 'w')
+    main_conf.write(main_conf_fp)
+    main_conf_fp.close()
+
+    ns_conf = ConfigParser.SafeConfigParser({"bridge name": bridge_name, "bridge ip": ip_addr})
+    nc_conf_fp = file(ns_conf_path, 'w')
+    ns_conf.write(nc_conf_fp)
+    nc_conf_fp.close()
