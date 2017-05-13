@@ -29,10 +29,9 @@ class NetManager(object):
         ns_fp.close()
 
     def get_ns(self, conf):
-        ns_name = self.get_exists_ns(conf)
-        if ns_name is None:
-            ns_name = self.create_new_ns(conf)
-        return ns_name
+        self.ns_name = self.get_exists_ns(conf)
+        if self.ns_name is None:
+            self.create_new_ns(conf)
 
     def create_new_ns(self, conf):
         # TODO need recheck
