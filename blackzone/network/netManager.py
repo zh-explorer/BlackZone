@@ -45,7 +45,7 @@ class NetManager(object):
         ipr = IPRoute()
 
         # create veth part
-        ipdb.create(ifname=self.veth_name, kind='veth', peer='v-eth0').commit()
+        ipdb.create(ifname=self.veth_name, kind='veth', peer='veth0').commit()
 
         # add veth to bridge and up
         with ipdb.interfaces[self.bridge_name] as br:
@@ -55,25 +55,25 @@ class NetManager(object):
             i.up()
 
         # add to peer to ns
-        with ipdb.interfaces['v-eth0'] as i:
+        with ipdb.interfaces['veth0'] as i:
             i.net_ns_fd = self.ns_name
 
         # set peer address and up
         self.veth_ip = self.get_ip(conf)
-        with ipdb2.interfaces['v-eth0'] as i:
+        with ipdb2.interfaces['veth0'] as i:
             i.add_ip(self.veth_ip)
             i.up()
 
         # add route
         ipdb2.route.add(des='0.0.0.0/0', gateway=self.bridge_ip.split('/')[0],
-                        oif=ipdb2.interfaces['v-eth0'].index).commit()
+                        oif=ipdb2.interfaces['veth0'].index).commit()
 
         conf.add_section(self.veth_ip)
         conf.set(self.veth_ip, "veth name", self.veth_name)
         conf.set(self.veth_ip, "ns name", self.ns_name)
         conf.set(self.veth_ip, "in use", "true")
 
-    def relese(self):
+    def release(self):
         # TODO need clean when has too much free ns
         # just set in use to false
         ns_fp = open_l(self.ns_conf_path)
