@@ -5,6 +5,8 @@ from pyroute2 import NetlinkError
 from ..context import context
 import ConfigParser
 import os
+import iptc
+
 
 # This two function do not use flock!!
 
@@ -75,10 +77,72 @@ def net_init(bridge_name="blackzone0", ip_addr="172.20.0.1/16"):
     with file(ns_conf_path, 'w') as ns_conf_fp:
         ns_conf.write(ns_conf_fp)
 
+    ip_list = ip_addr.split('.')
+    ip_list[3] = "0/" + ip_list[3].split('/')[1]
+    ip_area = ip_list[0] + '.' + ip_list[1] + '.' + '0' + '.' + ip_list[3]
+
+    # check exists iptables and add
+    nat_table = iptc.Table(iptc.Table.NAT)
+    nat_chain = iptc.Chain(nat_table, "POSTROUTING")
+
+    has_table = False
+    for rule in nat_chain.rules:
+        if rule.protocol == "ip" and rule.src.split('/')[0] == ip_area.split('/')[0] \
+                and rule.src.split('/')[1] == "255.255.0.0" and rule.dst == '0.0.0.0/0.0.0.0' \
+                and rule.in_interface is None and rule.out_interface == "!" + bridge_name \
+                and len(rule.matches) == 0 and rule.target.name == "MASQUERADE":
+            has_table = True
+
+    if not has_table:
+        rule = iptc.Rule()
+        rule.src = ip_area
+        rule.out_interface = "!" + bridge_name
+        rule.target = rule.create_target("MASQUERADE")
+        nat_chain.insert_rule(rule)
+
+    # don't know how to call it
+    t1 = False      # iptables -A FORWARD  -i blackzone0  -o blackzone0 -j ACCEPT
+    t2 = False      # iptables -A FORWARD  -i blackzone0  ! -o blackzone0 -j ACCEPT
+    t3 = False      # iptables -A FORWARD  -o blackzone0 -j ACCEPT
+
+    filter_table = iptc.Table(iptc.Table.FILTER)
+    filter_chain = iptc.Chain(filter_table, "FORWARD")
+    for rule in filter_chain.rules:
+        if rule.in_interface == bridge_name and rule.protocol == "ip" and rule.src == "0.0.0.0/0.0.0.0" \
+                and rule.dst == '0.0.0.0/0.0.0.0' and len(rule.matches) == 0 and rule.target.name == "ACCEPT":
+            if rule.out_interface == bridge_name:
+                t1 = True
+            elif rule.out_interface == "!" + bridge_name:
+                t2 = True
+        elif rule.out_interface == bridge_name and rule.in_interface is None and rule.protocol == "ip" \
+                and rule.src == "0.0.0.0/0.0.0.0" and rule.dst == '0.0.0.0/0.0.0.0' \
+                and len(rule.matches) == 0 and rule.target.name == "ACCEPT":
+            t3 = True
+
+    if not t1:
+        rule = iptc.Rule()
+        rule.out_interface = bridge_name
+        rule.in_interface = bridge_name
+        rule.target = rule.create_target("ACCEPT")
+        filter_chain.insert_rule(rule)
+
+    if not t2:
+        rule = iptc.Rule()
+        rule.out_interface = '!'+bridge_name
+        rule.in_interface = bridge_name
+        rule.target = rule.create_target("ACCEPT")
+        filter_chain.insert_rule(rule)
+
+    if not t3:
+        rule = iptc.Rule()
+        rule.out_interface = bridge_name
+        rule.target = rule.create_target("ACCEPT")
+        filter_chain.insert_rule(rule)
+
 
 # release all ns
 def net_release():
-    pid = os.getuid()   # not bad
+    pid = os.getuid()  # not bad
     if pid != 0:
         raise OSError("Permission denied: please use root")
 
@@ -89,7 +153,7 @@ def net_release():
         return
 
     with file(ns_conf_path) as ns_conf_fp:
-        ns_conf.read(ns_conf_fp)
+        ns_conf.readfp(ns_conf_fp)
 
     for section in ns_conf.sections():
         veth_name = ns_conf.get(section, 'veth name')
@@ -102,7 +166,7 @@ def net_release():
             try:
                 ipr.link('del', index=dev[0])
             except NetlinkError, e:
-                if e.code != 19:    # No such device
+                if e.code != 19:  # No such device
                     raise NetlinkError(e)
 
         # delete ns
