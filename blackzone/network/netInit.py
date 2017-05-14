@@ -18,6 +18,12 @@ def net_init(bridge_name="blackzone0", ip_addr="172.20.0.1/16"):
     ipdb = IPDB()
     ipr = IPRoute()
 
+    conf_dir = os.path.join(context.cwd, "netconf")
+    if not os.path.exists(conf_dir):
+        os.mkdir(conf_dir)
+    elif not os.path.isdir(conf_dir):
+        raise OSError("netconf is not exists", conf_dir)
+
     # delete old bridge
     # TODO may be I should mov this path to context
     main_conf_path = os.path.join(context.cwd, "netconf", "main.config")
@@ -58,13 +64,6 @@ def net_init(bridge_name="blackzone0", ip_addr="172.20.0.1/16"):
         br.add_ip(ip_addr)
         br.up()
 
-    conf_dir = os.path.join(context.cwd, "netconf")
-
-    if not os.path.exists(conf_dir):
-        os.mkdir(conf_dir)
-    elif not os.path.isdir(conf_dir):
-        raise OSError("netconf is not exists", conf_dir)
-
     main_conf = ConfigParser.SafeConfigParser()
     main_conf.add_section("bridge")
     main_conf.set("bridge", "name", bridge_name)
@@ -72,7 +71,7 @@ def net_init(bridge_name="blackzone0", ip_addr="172.20.0.1/16"):
     with file(main_conf_path, 'w') as main_conf_fp:
         main_conf.write(main_conf_fp)
 
-    ns_conf = ConfigParser.SafeConfigParser({"bridge name": bridge_name, "bridge ip": ip_addr})
+    ns_conf = ConfigParser.SafeConfigParser()
     with file(ns_conf_path, 'w') as ns_conf_fp:
         ns_conf.write(ns_conf_fp)
 
@@ -85,6 +84,10 @@ def net_release():
 
     ns_conf_path = os.path.join(context.cwd, "netconf", "namespace.config")
     ns_conf = ConfigParser.SafeConfigParser()
+
+    if not os.path.exists(ns_conf_path):
+        return
+
     with file(ns_conf_path) as ns_conf_fp:
         ns_conf.read(ns_conf_fp)
 

@@ -21,10 +21,13 @@ class NetManager(object):
         self.bridge_ip = conf.get('bridge', 'ip')
 
         # must lock free conf first
-        ns_fp = open_l(self.ns_conf_path)
+        ns_fp = open_l(self.ns_conf_path, 'r+')
         conf = ConfigParser.SafeConfigParser()
         conf.readfp(ns_fp)
         self.get_ns(conf)
+
+        ns_fp.seek(0)
+        ns_fp.truncate()
         conf.write(ns_fp)
         ns_fp.close()
 
@@ -41,7 +44,7 @@ class NetManager(object):
         ipdb2 = IPDB(nl=NetNS(self.ns_name))
         ipdb.commit()
         ipdb2.commit()
-        ipr = IPRoute()
+
 
         # create veth part
         ipdb.create(ifname=self.veth_name, kind='veth', peer='veth0').commit()
@@ -59,13 +62,21 @@ class NetManager(object):
 
         # set peer address and up
         self.veth_ip = self.get_ip(conf)
+
+        ipdb2 = IPDB(nl=NetNS(self.ns_name))
+        ipdb2.commit()
         with ipdb2.interfaces['veth0'] as i:
             i.add_ip(self.veth_ip)
             i.up()
 
+        with ipdb2.interfaces['lo'] as i:
+            i.up()
+
         # add route
-        ipdb2.route.add(des='0.0.0.0/0', gateway=self.bridge_ip.split('/')[0],
-                        oif=ipdb2.interfaces['veth0'].index).commit()
+        # ipdb2.routes.add(dst='0.0.0.0/0', gateway=self.bridge_ip.split('/')[0],
+        #                 oif=ipdb2.interfaces['veth0'].index).commit()
+        ns = NetNS(self.ns_name)
+        ns.route("add", dst='0.0.0.0', mask=0, gateway =self.bridge_ip.split('/')[0], oif=ns.link_lookup(ifname='veth0'))
 
         conf.add_section(self.veth_ip)
         conf.set(self.veth_ip, "veth name", self.veth_name)
@@ -75,15 +86,21 @@ class NetManager(object):
     def release(self):
         # TODO need clean when has too much free ns
         # just set in use to false
-        ns_fp = open_l(self.ns_conf_path)
+        ns_fp = open_l(self.ns_conf_path, "r+")
         conf = ConfigParser.SafeConfigParser()
         conf.readfp(ns_fp)
         conf.set(self.veth_ip, 'in use', 'false')
+
+        ns_fp.seek(0)
+        ns_fp.truncate()
+        conf.write(ns_fp)
 
     def get_exists_ns(self, conf):
         # find a free ns
         for section in conf.sections():
             if not conf.getboolean(section, "in use"):
+                self.veth_ip = section
+                self.veth_name = conf.get(section, 'veth name')
                 conf.set(section, "in use", "true")
                 return conf.get(section, "ns name")
         # not find
@@ -91,12 +108,12 @@ class NetManager(object):
 
     def random_ns_name(self):
         name = str(time.time()) + context.get_noise()
-        return sha256(name).hexdigest()[:16]
+        return sha256(name).hexdigest()[:10]
 
     def get_ip(self, conf):
         sections = conf.sections()
-        for i in xrange(256):
-            for j in xrange(256):
+        for i in xrange(0, 256):
+            for j in xrange(2, 256):
                 ip_zone = self.bridge_ip.split('.')[:2]
                 ip = ip_zone[0] + '.' + ip_zone[1] + '.' + str(i) + '.' + str(j) + '/16'
                 if ip not in sections:
