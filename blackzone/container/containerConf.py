@@ -8,7 +8,8 @@ class ContainerConfig(object):
     """
     config = DataDict()
 
-    def __init__(self):
+    def __init__(self, ns_name=None):
+        self.ns_name = ns_name
         self.config.ociVersion = "1.0.0-rc5"
         self.config.hostname = "runc"
         self.set_platform()
@@ -164,9 +165,16 @@ class ContainerConfig(object):
         linux.namespaces += {
             "type": "pid"
         }
-        linux.namespaces += {
-            "type": "network"
-        }
+
+        if self.ns_name is not None:
+            linux.namespaces += {
+                "type": "network",
+                "path": "/run/netns/" + self.ns_name
+            }
+        else:
+            linux.namespaces += {
+                "type": "network"
+            }
         linux.namespaces += {
             "type": "ipc"
         }

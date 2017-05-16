@@ -12,12 +12,17 @@ from .fsManager import FsManager
 
 
 class Container(object):
-    def __init__(self, image_id):
+    def __init__(self, image_id, container_id, ns=None):
         # TODO 持久化保存
         self.image_id = image_id
-        self.container_id = self.sha(str(time.time()) + context.get_noise())
+        self.ns = ns
+
+        # not make container_id by itself, the sha method may be useless
+        # self.container_id = self.sha(str(time.time()) + context.get_noise())
+        self.container_id = container_id
+
         self.fs = FsManager(self.image_id, self.container_id)
-        self.config = ContainerConfig()
+        self.config = ContainerConfig(ns_name=self.ns)
         self.create_config_file()
 
     def create_config_file(self):
