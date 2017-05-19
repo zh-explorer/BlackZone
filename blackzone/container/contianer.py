@@ -9,6 +9,7 @@ from ..tubes.process import Process
 from ..context import context
 from .containerConf import ContainerConfig
 from .fsManager import FsManager
+from ..network import NetManager
 
 
 class Container(object):
@@ -22,7 +23,11 @@ class Container(object):
         self.container_id = container_id
 
         self.fs = FsManager(self.image_id, self.container_id)
-        self.config = ContainerConfig(ns_name=self.ns)
+        if isinstance(self.ns, NetManager):
+            name = self.ns.ns_name
+        else:
+            name = self.ns
+        self.config = ContainerConfig(ns_name=name)
         self.create_config_file()
 
     def create_config_file(self):

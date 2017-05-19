@@ -45,7 +45,6 @@ class NetManager(object):
         ipdb.commit()
         ipdb2.commit()
 
-
         # create veth part
         ipdb.create(ifname=self.veth_name, kind='veth', peer='veth0').commit()
 
@@ -76,7 +75,7 @@ class NetManager(object):
         # ipdb2.routes.add(dst='0.0.0.0/0', gateway=self.bridge_ip.split('/')[0],
         #                 oif=ipdb2.interfaces['veth0'].index).commit()
         ns = NetNS(self.ns_name)
-        ns.route("add", dst='0.0.0.0', mask=0, gateway =self.bridge_ip.split('/')[0], oif=ns.link_lookup(ifname='veth0'))
+        ns.route("add", dst='0.0.0.0', mask=0, gateway=self.bridge_ip.split('/')[0], oif=ns.link_lookup(ifname='veth0'))
 
         conf.add_section(self.veth_ip)
         conf.set(self.veth_ip, "veth name", self.veth_name)

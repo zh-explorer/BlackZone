@@ -25,7 +25,6 @@ class ProcessSynClass(object):
         instance = class_object(*args, **kwargs)
         while True:
             cmd = peer.recv()
-            print cmd
             if cmd == "end":
                 break
             if cmd["func"] == "get":
