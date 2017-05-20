@@ -17,7 +17,7 @@ class ProcessSynClass(object):
         do_syn = object.__getattribute__(self, "do_syn")
         p = multiprocessing.Process(target=do_syn, args=args, kwargs=kwargs)
         p.start()
-        object.__setattr__(self, "p", p)
+        object.__setattr__(self, "sub_process", p)
 
     def do_syn(self, *args, **kwargs):
         class_object = object.__getattribute__(self, "class_object")
@@ -53,6 +53,8 @@ class ProcessSynClass(object):
     def __getattribute__(self, item):
         if item == "kill_the_subprocess":
             return object.__getattribute__(self, "kill_the_subprocess")
+        elif item == "sub_process":
+            return object.__getattribute__(self, "sub_process")
         parent = object.__getattribute__(self, "parent_conn")
         parent.send({"func": "get", "item": item})
         ret = parent.recv()
